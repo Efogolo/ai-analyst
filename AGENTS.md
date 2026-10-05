@@ -15,7 +15,7 @@ knowledge/beam/          one note per table, quirks.md, corrections.md
 helpers/                 profile, checks, charts; the arithmetic runs here
 outputs/<date>_<slug>/   one folder per question:
                          frame.md, analysis.py, data/, charts/, review.md, brief.md
-.claude/skills/          frame, profile, analyse, validate, deliver, describe-csv
+.claude/skills/          frame, profile, analyse, validate, deliver
 .claude/commands/        analyst
 ```
 
@@ -23,6 +23,7 @@ outputs/<date>_<slug>/   one folder per question:
 - Run Python with `poetry run python ...` from the repo root.
 - Never print raw rows into the conversation; aggregates only.
 - Never modify anything in `data/`.
-- Get dates from `date +%F`; never guess them.
+- Get today's date from `date +%F` (for run folder names); never guess it.
+- The analysis date is 2026-09-24, the last day in the data. Judge open periods, finished trials and scheduled starts against this date, never against today.
 - No em dashes in anything written for a reader.
 - Read `knowledge/beam/` (table notes, `quirks.md`, `corrections.md`) before touching data; when the user corrects you, append one dated line to `corrections.md` and continue.
