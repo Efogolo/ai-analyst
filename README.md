@@ -44,6 +44,17 @@ An AI data analyst that runs inside Claude Code and answers business questions a
    ```
    Run `claude` from the repo root so it picks up the project's skills, commands and instructions.
 
+## How the agent is put together
+
+There is no framework and no Python program controlling the model. The agent is a Claude Code project:
+
+- **A command:** `.claude/commands/analyst.md` lists the five steps in order, and `/analyst <question>` runs them. A command file is the older form of a skill, and Claude Code still supports it.
+- **Routing lines:** a few lines in `AGENTS.md` say which skill handles which kind of request. A business question runs the full chain, a file to check goes to Validate, and finished results go to Deliver.
+- **One skill per step:** each step is its own skill under `.claude/skills/`.
+- **A knowledge folder:** `knowledge/beam/` holds one note per table (Profile writes these), a file of known quirks, and a corrections file the agent reads before every run and adds to when you correct it.
+- **Helpers:** small Python modules in `helpers/`. Claude writes the analysis script, and the arithmetic runs in code, never in the model's head.
+- **One output folder per question:** the brief, the charts and the script that produced the numbers, so anyone can rerun it.
+
 ## What you will build
 
 This repo ships the analyst's middle: the Profile and Analyse skills and the helpers behind them. Three skills are still to be written before `/analyst` can run end to end: Frame, Validate and Deliver, each in its own folder under `.claude/skills/`. Until Profile has been run on each table, `knowledge/beam/` holds only the known quirks and the corrections file. A finished version of everything lives in [the reference repo](https://github.com/Future-Proof-DS/ai-analyst), for comparison once the three skills are written.
