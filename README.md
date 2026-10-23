@@ -45,13 +45,13 @@ An AI data analyst that runs inside Claude Code and answers business questions a
    ```bash
    claude
    ```
-   Run `claude` from the repo root so it picks up the project's skills, commands and instructions.
+   Run `claude` from the repo root so it picks up the project's skills and instructions.
 
 ## How the agent is put together
 
 There is no framework and no Python program controlling the model. The agent is a Claude Code project:
 
-- **A command:** `.claude/commands/analyst.md` lists the five steps in order, and `/analyst <question>` runs them. A command file is the older form of a skill, and Claude Code still supports it.
+- **An entry-point skill:** `.claude/skills/analyst/SKILL.md` lists the five steps in order, and `/analyst <question>` runs them.
 - **Routing lines:** a few lines in `AGENTS.md` say which skill handles which kind of request. A business question runs the full chain, a file to check goes to Validate, and finished results go to Deliver.
 - **One skill per step:** each step is its own skill under `.claude/skills/`.
 - **A knowledge folder:** `knowledge/beam/` holds one note per table (Profile writes these), a file of known quirks, and a corrections file the agent reads before every run and adds to when you correct it.
@@ -72,7 +72,7 @@ ai-analyst/
 ├── knowledge/beam/       # Known data quirks and corrections
 ├── helpers/              # Shared Python helpers for analysis scripts
 ├── outputs/              # One folder per question (not tracked)
-├── .claude/              # Skills and commands for Claude Code
+├── .claude/              # Skills for Claude Code
 └── pyproject.toml        # Dependencies
 ```
 
