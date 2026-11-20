@@ -10,8 +10,10 @@ table:
     re-subscribes after cancelling gets a NEW row rather than an update to
     an existing one — confirm this before treating COUNT(*) per user as
     meaningful (it would count plan changes as separate subscriptions).
-  grain: One row per subscription_id (not one row per user — a user may
-    have several, historical and current).
+  grain: One row per subscription_id, and subscriptions.user_id is also
+    unique, so there is at most one row per user. Plan and subscription
+    history is NOT recoverable from this table (see quirks.md "One
+    subscription per user").
   primary_key: subscription_id
 
 columns:
@@ -97,6 +99,15 @@ important_caveats:
   - >
     No end_date before start_date, no orphan user_id, and no subscription
     starts before its user's signup date.
+  - >
+    Quirk "One subscription per user" (quirks.md): user_id is unique, COUNT(*)
+    per user is 0 or 1, and plan changes and re-subscriptions are not kept as
+    history. Any earlier note in this file about several rows per user is
+    superseded by this.
+  - >
+    plan != 'free' is not a safe proxy for "paying". 235 started paid
+    subscriptions (mostly expired) have no payment. Count paying users from
+    payments (quirk "Payments are paid plans only"), not from this table.
 
 relationships:
   - to: users

@@ -58,6 +58,10 @@ important_caveats:
     Always aggregate (COUNT/SUM/AVG) grouped by user_id and a date range;
     never pull raw session rows in bulk.
   - >
+    Quirk "Sessions past the data end" (quirks.md): session_date runs two
+    days past the data's end (through 2026-09-26 vs. data ending 2026-09-24,
+    273 rows). Filter to the analysis date before counting anything.
+  - >
     SUM(duration_minutes) is additive and fine for "total listening time."
     For "typical session length," use AVG rather than SUM, and be aware a
     small number of very long sessions can skew AVG — consider also

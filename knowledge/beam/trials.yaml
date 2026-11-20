@@ -83,6 +83,10 @@ important_caveats:
     For matured trials joined to trial_snapshot, none cancels inside the first
     3 days, so day 1 to 3 activity is not cut short by a cancellation.
     Conversions are recorded at or after ends_at.
+  - >
+    Quirk "Early cancellations in open trials" (quirks.md): judge trial
+    maturity by ends_at <= analysis_date, never by whether outcome is filled
+    in. Trials can show outcome = canceled mid-trial, before ends_at.
 
 relationships:
   - to: users

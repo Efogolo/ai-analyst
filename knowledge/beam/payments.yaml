@@ -78,6 +78,11 @@ important_caveats:
   - >
     Integrity checks pass: no orphan subscription_id, no payment before its
     subscription's start_date, and none after its end_date.
+  - >
+    Quirk "Payments are paid plans only" (quirks.md): there are no payment rows
+    for free-plan subscriptions, and 235 started paid subscriptions (mostly
+    expired) have zero payments. Count paying users from payments, never by
+    filtering subscriptions.plan != 'free'.
 
 relationships:
   - to: subscriptions

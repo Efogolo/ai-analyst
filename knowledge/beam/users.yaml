@@ -14,6 +14,7 @@ important_caveats:
   - "Profile 2026-09-24: 31,165 rows, user_id unique (0 duplicates), no nulls in any column. Grain is clean."
   - "signup_date runs 2022-01-01 to 2026-09-24, which matches the end of the data. Users who signed up recently have had little time to subscribe or churn."
   - "country is a coarse bucket (US, EU, India, Rest), not a country list. Do not report 'Rest' as a country."
+  - "Quirk \"Coarse country buckets\" (quirks.md): country takes only four values, US, EU, India and Rest. Rest is a catch-all, never to be reported as if it were a country."
   - "The September 2025 signup spike (see quirks.md) is in this table. Say so when signup counts by month enter a comparison."
 
 columns:

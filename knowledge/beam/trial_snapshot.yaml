@@ -119,6 +119,12 @@ important_caveats:
     day three are most often 0 or 1. Converted trials average more sessions
     over three days than canceled ones, so total activity is a confounder
     for any day one pattern. Compare patterns at matched total activity.
+  - >
+    Quirk "Trial snapshot covers part of the matured trials" (quirks.md):
+    ml.trial_snapshot covers trials started 2026-08-01 through 2026-09-09
+    only (1,516 rows). The 37 matured trials started on 2026-09-10 are NOT
+    in this table, so treating it as "all matured trials" works from an
+    incomplete population.
 
 relationships:
   - to: trials
