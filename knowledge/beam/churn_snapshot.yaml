@@ -1,0 +1,121 @@
+# Semantic layer: Churn snapshot (ML feature store)
+# Source: ml.churn_snapshot (Beam course database), plus the
+# ml.churn_snapshot_latest view (same 15 columns, filtered to each user's
+# most recent snapshot_date — use the view for "current churn risk" questions
+# so you don't have to filter to MAX(snapshot_date) yourself).
+
+table:
+  name: churn_snapshot
+  fully_qualified_name: ml.churn_snapshot
+  latest_view: ml.churn_snapshot_latest
+  description: >
+    Point-in-time feature snapshot per user, built for churn modeling.
+    Each row is "what did this user's engagement/payment/tenure profile
+    look like as of snapshot_date, and did they churn within the following
+    90 days." Use churn_snapshot_latest when you just want each user's
+    current/most recent row; use churn_snapshot directly when you need the
+    history across multiple snapshot dates (e.g. to see how a user's
+    features evolved).
+  grain: One row per (user_id, snapshot_date).
+  primary_key: [user_id, snapshot_date]
+
+columns:
+  - name: user_id
+    type: int
+    description: Foreign key to users.user_id.
+    role: foreign key / join key
+
+  - name: snapshot_date
+    type: date
+    description: The date this feature row was computed as of.
+    role: time dimension
+
+  - name: plan
+    type: varchar(255)
+    description: User's plan as of snapshot_date.
+    role: dimension
+
+  - name: country
+    type: varchar(255)
+    description: Denormalized from users.country.
+    role: dimension
+
+  - name: device_type
+    type: varchar(255)
+    description: Denormalized from users.device_type.
+    role: dimension
+
+  - name: tenure_days
+    type: int
+    description: Days since signup_date, as of snapshot_date.
+    role: measure
+
+  - name: subscription_age_days
+    type: int
+    description: >
+      ASSUMED: days since the user's CURRENT subscription spell started
+      (distinct from tenure_days, which counts from original signup) — so
+      for a user who churned and re-subscribed, this would be smaller than
+      tenure_days. Confirm.
+    role: measure
+
+  - name: sessions_last_30d
+    type: bigint
+    description: Count of sessions in the 30 days before snapshot_date.
+    role: measure (trailing-window — not additive across snapshot_date rows)
+
+  - name: sessions_last_90d
+    type: bigint
+    description: Count of sessions in the 90 days before snapshot_date.
+    role: measure (trailing-window)
+
+  - name: avg_session_minutes_90d
+    type: numeric
+    description: Average session duration over the trailing 90 days.
+    role: measure
+
+  - name: listen_share_90d
+    type: numeric
+    description: >
+      ASSUMED: share of this user's sessions (or session time) in the
+      trailing 90 days that were "listen" activity_type, vs. other
+      activity_types in the sessions table. Confirm the exact definition
+      (share of session count vs. share of time) and the denominator.
+    role: measure
+
+  - name: days_since_last_session
+    type: int
+    description: Recency — days between the user's last session and snapshot_date.
+    role: measure
+
+  - name: total_payments
+    type: bigint
+    description: Lifetime payment count as of snapshot_date.
+    role: measure
+
+  - name: last_payment_amount
+    type: numeric
+    description: Amount of the user's most recent payment as of snapshot_date.
+    role: measure
+
+  - name: churned_within_90d
+    type: int
+    description: >
+      The ML LABEL: 1 if the user churned within 90 days AFTER
+      snapshot_date, else 0. IMPORTANT: for snapshot_date values within the
+      last 90 days of "today," this label may be incomplete/not yet
+      determinable (the 90-day window hasn't fully elapsed) — confirm how
+      such rows are handled (NULL? provisionally 0? excluded entirely?)
+      before using recent snapshots for churn-rate reporting, since it's a
+      forward-looking label and using it incorrectly on live/recent data
+      risks a misleading churn rate.
+    role: label (ML target, NOT safe to use as-is for "current" churn
+      reporting on the most recent snapshot_dates)
+
+relationships:
+  - to: users
+    via: [user_id]
+
+example_business_questions:
+  - "What features best distinguish churned vs. retained users (tenure, engagement, payment recency)?"
+  - "Has the churn rate (share with churned_within_90d = 1, for snapshots old enough that the label is final) shifted since the March 2026 price increase?"

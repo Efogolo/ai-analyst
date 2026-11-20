@@ -1,0 +1,62 @@
+# Semantic layer: User activity metrics (mart)
+# Source: marts.user_activity_metrics (Beam course database)
+
+table:
+  name: user_activity_metrics
+  fully_qualified_name: marts.user_activity_metrics
+  description: >
+    Company-wide daily active-user rollup — NOT per-user. One row per
+    calendar date with that day's DAU, and the trailing WAU/MAU as of
+    that date.
+  grain: One row per date.
+  primary_key: date
+
+columns:
+  - name: date
+    type: date
+    description: The calendar date this row's metrics apply to.
+    role: time dimension / primary key
+
+  - name: dau
+    type: int
+    description: Daily active users on this date.
+    role: measure (daily count — do not SUM across multiple dates; a user
+      active on 5 days would be counted 5 times. Use AVG(dau) for "average
+      daily actives over a period.")
+
+  - name: wau
+    type: int
+    description: >
+      Weekly active users — ASSUMED a trailing 7-day rolling count as of
+      `date`, not a Mon-Sun calendar week. Confirm which.
+    role: measure (rolling-window stock — never SUM across dates; adjacent
+      days' WAU values overlap almost entirely, since they share most of
+      the same 7-day window)
+
+  - name: mau
+    type: int
+    description: >
+      Monthly active users — ASSUMED a trailing 30-day rolling count as of
+      `date`, not a calendar month. Confirm which.
+    role: measure (rolling-window stock — same caveat as wau, even more so:
+      adjacent days' MAU values overlap on 29 of 30 days)
+
+important_caveats:
+  - >
+    dau is a true daily flow-like count (safe to average over a period, but
+    not to sum). wau and mau are ROLLING WINDOW counts — summing or even
+    naively charting day-over-day differences can be misleading since
+    consecutive days' windows overlap almost entirely. For a trend, plot
+    the values across dates directly rather than trying to derive
+    period totals from them.
+
+relationships:
+  - to: users / sessions
+    via: []
+    note: No join key to individual users — this is a pre-aggregated
+      company-wide table. For per-user activity, use sessions directly
+      (aggregated) or ml.churn_snapshot's sessions_last_30d/90d.
+
+example_business_questions:
+  - "What's the DAU/WAU/MAU trend over the last quarter?"
+  - "Did engagement (DAU, stickiness = DAU/MAU) dip around the March 2026 price increase?"

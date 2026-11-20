@@ -2,7 +2,7 @@
 name: analyse
 description: Answers a framed business question about Beam's data with one pandas script that can be rerun, where every headline number carries its comparison. Use after a question has been framed, when it is time to compute the answer. Reads the frame note in the run folder under outputs/ and writes the script, result tables and charts next to it.
 user-invocable: true
-allowed-tools: Read Bash Write Edit Glob AskUserQuestion
+allowed-tools: Read Bash Write Edit Glob AskUserQuestion mcp__course-db__list_tables mcp__course-db__execute_sql
 argument-hint: "[path to the run folder under outputs/]"
 ---
 
@@ -39,7 +39,7 @@ These hold in every act.
 
 ## Act 2: Load the context
 
-1. Read `knowledge/beam/quirks.md`, `knowledge/beam/corrections.md`, and `knowledge/beam/<table>.md` for each table involved.
+1. Read `knowledge/beam/quirks.md`, `knowledge/beam/corrections.md`, and `knowledge/beam/<table>.yaml` for each table involved.
 2. If a table involved has no note, run the profile skill on it first: read `.claude/skills/profile/SKILL.md` and follow it, then come back here.
 3. Say in one line which quirks apply to this question, and which corrections, if any.
 
@@ -58,7 +58,10 @@ Show the plan before writing the script.
 
 Write one script at `outputs/<run>/analysis.py`:
 
-1. Read `data/*.csv` with pandas.
+1. Open a direct Postgres connection and load each table you need with `pandas.read_sql(...)`. Use `from helpers.db import get_connection, read_sql`; both read the `POSTGRES_*` environment variables, so no credential appears in the script. `mcp__course-db__list_tables` and `mcp__course-db__execute_sql` are tools you call in the conversation. They cannot be imported in a script, so `analysis.py` must never try to call them. Use them only to explore while planning.
+   - Select only the columns you need and filter in SQL. For `public.sessions`, which is very large, aggregate in SQL (COUNT/SUM/AVG with GROUP BY) and load the result; never load its raw rows.
+   - Postgres `numeric` columns arrive as `Decimal`. Cast them in the query (`amount_usd::float`) before doing arithmetic.
+   - Run only SELECT statements. The connection is read-only.
 2. Use `helpers.checks` for at least the checks the plan needs: `date_boundaries` for partial periods at the edges, `matured_only` for windows that have not closed, `join_fan_out` before trusting any join, `parts_sum_to_total` when segments should add back to a total. Print each check's `summary`.
 3. Save each result table to `outputs/<run>/data/<name>.csv`.
 4. Make charts only through `helpers.charts`: `bar` or `line`, then `save` into `outputs/<run>/charts/<name>.png`. Every title states the takeaway the chart proves, not a label.

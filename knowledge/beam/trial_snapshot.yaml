@@ -1,0 +1,232 @@
+# Semantic layer: Trial snapshot (ML feature store)
+# Source: ml.trial_snapshot (Beam course database), plus the
+# ml.trial_snapshot_latest view (same 12 columns — mirrors trial_snapshot,
+# presumably filtered to each trial's most recent/final snapshot_date).
+#
+# This table is the direct answer source for: "Do trial users who binge on
+# day one and then go quiet convert worse than steady users?"
+
+table:
+  name: trial_snapshot
+  fully_qualified_name: ml.trial_snapshot
+  latest_view: ml.trial_snapshot_latest
+  description: >
+    Early-engagement feature snapshot per trial, covering the first 3 days
+    of each trial, plus the eventual converted outcome. Built for exactly
+    the kind of "does early behavior pattern predict conversion" question
+    the course asks.
+  grain: One row per (trial_id, snapshot_date). ASSUMED typically one
+    snapshot per trial (taken after day 3), but confirm whether multiple
+    snapshot_date rows can exist per trial_id.
+  primary_key: [trial_id, snapshot_date]
+
+columns:
+  - name: trial_id
+    type: int
+    description: Foreign key to trials.trial_id.
+    role: foreign key / join key
+
+  - name: user_id
+    type: int
+    description: Foreign key to users.user_id.
+    role: foreign key / join key
+
+  - name: snapshot_date
+    type: date
+    description: The date this feature row was computed as of.
+    role: time dimension
+
+  - name: trial_started_at
+    type: date
+    description: Denormalized from trials.started_at (date-only here vs.
+      timestamp on trials — confirm if that's an intentional truncation).
+    role: time dimension
+
+  - name: country
+    type: varchar(255)
+    description: Denormalized from users.country.
+    role: dimension
+
+  - name: device_type
+    type: varchar(255)
+    description: Denormalized from users.device_type.
+    role: dimension
+
+  - name: sessions_day1
+    type: bigint
+    description: Number of sessions on trial day 1.
+    role: measure — THE key column for detecting "bingeing": a high value
+      here relative to sessions_day2/day3 is the bingeing signal.
+
+  - name: sessions_day2
+    type: bigint
+    description: Number of sessions on trial day 2.
+    role: measure
+
+  - name: sessions_day3
+    type: bigint
+    description: Number of sessions on trial day 3.
+    role: measure
+
+  - name: listen_sessions_3d
+    type: bigint
+    description: >
+      ASSUMED: count of sessions over the first 3 days specifically of
+      activity_type "listen" (a subset of sessions_day1+day2+day3).
+      Confirm.
+    role: measure
+
+  - name: total_minutes_3d
+    type: bigint
+    description: Total session minutes across the first 3 trial days.
+    role: measure
+
+  - name: converted
+    type: int
+    description: >
+      Binary outcome label: 1 if the trial converted to a paying
+      subscription, else 0. ASSUMED to correspond to trials.outcome =
+      "converted" — confirm they're always consistent.
+    role: label (ML target)
+
+important_caveats:
+  - >
+    To test the "binge day 1 then go quiet" hypothesis, define a bingeing
+    flag such as sessions_day1 being high while sessions_day2 + sessions_day3
+    are low or zero (e.g. sessions_day1 > some threshold AND
+    sessions_day2 + sessions_day3 = 0 or well below sessions_day1), then
+    compare the `converted` rate for that group against "steady" trials
+    (engagement spread more evenly across the 3 days). There's no
+    pre-built "bingeing" flag — it has to be derived from these three
+    day-level session counts.
+
+  - >
+    Profile 2026-09-24: 1,516 rows, one row per trial_id (a single
+    snapshot_date, 2026-09-24), so the ASSUMED one snapshot per trial holds.
+    The date column trial_started_at runs 2026-08-01 to 2026-09-09 only.
+  - >
+    Coverage: it holds 1,516 of the 1,553 matured trials. The 37 missing
+    matured trials all started on 2026-09-10 (inferred: the snapshot needs a
+    full 3 day window before it was cut, or was built before that day closed).
+    Trials started 2026-09-11 or later are absent and still open. This table
+    therefore covers matured trials only, which is what a conversion question needs.
+  - >
+    converted agrees with trials.outcome on every row (807 converted,
+    709 not). converted = 1 means outcome = converted; 0 means canceled.
+  - >
+    sessions_day1 ranges 0 to 37, median 3, mean 4.47. 185 trials have no
+    day one session and 38 have none on any of the three days. Day two and
+    day three are most often 0 or 1. Converted trials average more sessions
+    over three days than canceled ones, so total activity is a confounder
+    for any day one pattern. Compare patterns at matched total activity.
+
+relationships:
+  - to: trials
+    via: [trial_id]
+  - to: users
+    via: [user_id]
+
+example_business_questions:
+  - "Do trial users who binge on day one and then go quiet convert worse than steady users?"
+  - "What's the relationship between total_minutes_3d and conversion rate?"
+
+# --- BEGIN profile (auto-generated by /profile — do not hand-edit) ---
+profile:
+  as_of: '2026-11-19'
+  rows: 1516
+  key:
+    columns:
+    - trial_id
+    - snapshot_date
+    declared_primary_key: true
+    duplicate_rows: 0
+  grain_guess: one row per trial_id, snapshot_date
+  columns:
+    trial_id:
+      null_rate: 0.0
+      distinct: 1516
+    user_id:
+      null_rate: 0.0
+      distinct: 1516
+    snapshot_date:
+      null_rate: 0.0
+      distinct: 1
+      min: '2026-09-24'
+      max: '2026-09-24'
+    trial_started_at:
+      null_rate: 0.0
+      distinct: 40
+      min: '2026-08-01'
+      max: '2026-09-09'
+    country:
+      null_rate: 0.0
+      distinct: 4
+      values:
+        US: 627
+        Rest: 303
+        EU: 298
+        India: 288
+    device_type:
+      null_rate: 0.0
+      distinct: 3
+      values:
+        Android: 516
+        iOS: 507
+        Web: 493
+    sessions_day1:
+      null_rate: 0.0
+      distinct: 30
+    sessions_day2:
+      null_rate: 0.0
+      distinct: 16
+      values:
+        '1': 326
+        '0': 313
+        '2': 253
+        '3': 190
+        '4': 158
+        '5': 80
+        '6': 69
+        '7': 45
+        '8': 33
+        '9': 21
+        '10': 11
+        '11': 7
+        '12': 4
+        '16': 3
+        '13': 2
+        '15': 1
+    sessions_day3:
+      null_rate: 0.0
+      distinct: 17
+      values:
+        '1': 320
+        '0': 315
+        '2': 275
+        '3': 171
+        '4': 145
+        '5': 99
+        '6': 70
+        '7': 38
+        '8': 33
+        '9': 25
+        '10': 9
+        '11': 8
+        '13': 3
+        '16': 2
+        '14': 1
+        '12': 1
+        '23': 1
+    listen_sessions_3d:
+      null_rate: 0.0
+      distinct: 28
+    total_minutes_3d:
+      null_rate: 0.0
+      distinct: 309
+    converted:
+      null_rate: 0.0
+      distinct: 2
+      values:
+        '1': 807
+        '0': 709
+# --- END profile ---
