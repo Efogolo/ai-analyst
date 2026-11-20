@@ -1,0 +1,5 @@
+pattern,trials,converted,conv_pct,small,vs_overall_pp
+binge then quiet,253,67,26.48221343873518,False,-26.749976534879593
+steady,765,614,80.26143790849673,False,27.02924793488196
+other (mixed pattern),132,68,51.515151515151516,False,-1.7170384584632572
+light (under minimum sessions),366,58,15.846994535519126,False,-37.38519543809565
